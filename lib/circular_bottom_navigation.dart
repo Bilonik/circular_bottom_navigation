@@ -184,11 +184,12 @@ class _CircularBottomNavigationState extends State<CircularBottomNavigation>
         Positioned(
           child: Transform.scale(
             scale: scaleFactor,
-            child: Icon(
-              widget.tabItems[pos].icon,
-              size: widget.iconsSize,
-              color: iconColor,
-            ),
+            child: widget.tabItems[pos].icon
+//             child: Icon(
+//               widget.tabItems[pos].icon,
+//               size: widget.iconsSize,
+//               color: iconColor,
+//             ),
           ),
           left: r.center.dx - (widget.iconsSize / 2),
           top: r.center.dy -
