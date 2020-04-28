@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 class TabItem {
-  IconData icon;
+  var icon;
   String title;
   Color circleColor;
   TextStyle labelStyle;
