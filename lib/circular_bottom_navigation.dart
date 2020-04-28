@@ -1,273 +1,206 @@
-library circular_bottom_navigation;
-
-import 'dart:core';
-
-import 'package:circular_bottom_navigation/tab_item.dart';
+import 'package:clauDemo/parametros/globals.dart';
 import 'package:flutter/material.dart';
+import 'package:clauDemo/ecomerce/themes/light_color.dart';
+import 'package:clauDemo/ecomerce/wigets/BottomNavigationBar/bottom_curved_Painter.dart';
+import 'package:getflutter/components/badge/gf_badge.dart';
+import 'package:getflutter/components/badge/gf_icon_badge.dart';
+import 'package:getflutter/components/button/gf_icon_button.dart';
+import 'package:getflutter/shape/gf_badge_shape.dart';
 
-typedef CircularBottomNavSelectedCallback =Function(int selectedPos);
 
-class CircularBottomNavigation extends StatefulWidget {
-  final List<TabItem> tabItems;
-  final int selectedPos;
-  final double barHeight;
-  final Color barBackgroundColor;
-  final double circleSize;
-  final double circleStrokeWidth;
-  final double iconsSize;
-  final Color selectedIconColor;
-  final Color normalIconColor;
-  final Duration animationDuration;
-  final CircularBottomNavSelectedCallback selectedCallback;
-  final CircularBottomNavigationController controller;
-
-  CircularBottomNavigation(this.tabItems,
-      {this.selectedPos = 0,
-        this.barHeight = 60,
-        this.barBackgroundColor = Colors.white,
-        this.circleSize = 58,
-        this.circleStrokeWidth = 4,
-        this.iconsSize = 32,
-        this.selectedIconColor = Colors.white,
-        this.normalIconColor = Colors.grey,
-        this.animationDuration = const Duration(milliseconds: 300),
-        this.selectedCallback,
-        this.controller})
-      : assert(tabItems != null && tabItems.length != 0, "tabItems is required");
+class CustomBottomNavigationBar extends StatefulWidget {
+  final Function(int) onIconPresedCallback;
+  CustomBottomNavigationBar({Key key, this.onIconPresedCallback}) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _CircularBottomNavigationState();
+  _CustomBottomNavigationBarState createState() =>
+      _CustomBottomNavigationBarState();
 }
 
-class _CircularBottomNavigationState extends State<CircularBottomNavigation>
+class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
     with TickerProviderStateMixin {
-  Curve _animationsCurve = Cubic(0.27, 1.21, .77, 1.09);
-
-  AnimationController itemsController;
-  Animation<double> selectedPosAnimation;
-  Animation<double> itemsAnimation;
-
-  List<double> _itemsSelectedState;
-
-  int selectedPos;
-  int previousSelectedPos;
-
-  CircularBottomNavigationController _controller;
-
+  int _selectedIndex = 0;
+List carito ;
+  AnimationController _xController;
+  AnimationController _yController;
   @override
   void initState() {
+    _xController = AnimationController(
+        vsync: this, animationBehavior: AnimationBehavior.preserve);
+    _yController = AnimationController(
+        vsync: this, animationBehavior: AnimationBehavior.preserve);
+
+    Listenable.merge([_xController, _yController]).addListener(() {
+      setState(() {});
+    });
+  // traerCarito();
     super.initState();
-    if (widget.controller != null) {
-      _controller = widget.controller;
-      previousSelectedPos = selectedPos = _controller.value;
-    } else {
-      previousSelectedPos = selectedPos = widget.selectedPos;
-      _controller = CircularBottomNavigationController(selectedPos);
-    }
-
-    _controller.addListener(_newSelectedPosNotify);
-
-    _itemsSelectedState = List.generate(widget.tabItems.length, (index) {
-      return selectedPos == index ? 1.0 : 0.0;
-    });
-
-    itemsController = new AnimationController(vsync: this, duration: widget.animationDuration);
-    itemsController.addListener(() {
-      setState(() {
-        _itemsSelectedState.asMap().forEach((i, value) {
-          if (i == previousSelectedPos) {
-            _itemsSelectedState[previousSelectedPos] = 1.0 - itemsAnimation.value;
-          } else if (i == selectedPos) {
-            _itemsSelectedState[selectedPos] = itemsAnimation.value;
-          } else {
-            _itemsSelectedState[i] = 0.0;
-          }
-        });
-      });
-    });
-
-    selectedPosAnimation =
-        makeSelectedPosAnimation(selectedPos.toDouble(), selectedPos.toDouble());
-
-    itemsAnimation = Tween(begin: 0.0, end: 1.0)
-        .animate(CurvedAnimation(parent: itemsController, curve: _animationsCurve));
-  }
-
-  Animation<double> makeSelectedPosAnimation(double begin, double end) {
-    return Tween(begin: begin, end: end)
-        .animate(CurvedAnimation(parent: itemsController, curve: _animationsCurve));
-  }
-
-  void onSelectedPosAnimate() {
-    setState(() {});
-  }
-
-  void _newSelectedPosNotify() {
-    _setSelectedPos(widget.controller.value);
   }
 
   @override
-  Widget build(BuildContext context) {
-    double fullWidth = MediaQuery
-        .of(context)
-        .size
-        .width;
-    double fullHeight = widget.barHeight + (widget.circleSize / 2) + widget.circleStrokeWidth;
-    double sectionsWidth = fullWidth / widget.tabItems.length;
-
-    //Create the boxes Rect
-    List<Rect> boxes = List();
-    widget.tabItems.asMap().forEach((i, tabItem) {
-      double left = i * sectionsWidth;
-      double top = fullHeight - widget.barHeight;
-      double right = left + sectionsWidth;
-      double bottom = fullHeight;
-      boxes.add(Rect.fromLTRB(left, top, right, bottom));
-    });
-
-    List<Widget> children = List();
-
-    // This is the full view transparent background (have free space for circle)
-    children.add(Container(
-      width: fullWidth,
-      height: fullHeight,
-    ));
-
-    // This is the bar background (bottom section of our view)
-    children.add(Positioned(
-      child: Container(
-        width: fullWidth,
-        height: widget.barHeight,
-        decoration: BoxDecoration(
-            shape: BoxShape.rectangle,
-            color: widget.barBackgroundColor,
-            boxShadow: [new BoxShadow(color: Colors.grey, blurRadius: 2.0)]),
-      ),
-      top: fullHeight - widget.barHeight,
-      left: 0,
-    ));
-
-    // This is the circle handle
-    children.add(new Positioned(
-      child: Container(
-        width: widget.circleSize,
-        height: widget.circleSize,
-        child: Stack(
-          children: <Widget>[
-            Container(
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.barBackgroundColor),
-            ),
-            Container(
-              margin: EdgeInsets.all(widget.circleStrokeWidth),
-              decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: widget.tabItems[selectedPos].circleColor),
-            ),
-          ],
-        ),
-      ),
-      left: (selectedPosAnimation.value * sectionsWidth) +
-          (sectionsWidth / 2) -
-          (widget.circleSize / 2),
-      top: 0,
-    ));
-
-    //Here are the Icons and texts of items
-    boxes.asMap().forEach((int pos, Rect r) {
-      // Icon
-      Color iconColor =
-      pos == selectedPos ? widget.selectedIconColor : widget.normalIconColor;
-      double scaleFactor = pos == selectedPos ? 1.2 : 1.0;
-      children.add(
-        Positioned(
-          child: Transform.scale(
-            scale: scaleFactor,
-            child: widget.tabItems[pos].icon
-//             child: Icon(
-//               widget.tabItems[pos].icon,
-//               size: widget.iconsSize,
-//               color: iconColor,
-//             ),
-          ),
-          left: r.center.dx - (widget.iconsSize / 2),
-          top: r.center.dy -
-              (widget.iconsSize / 2) -
-              (_itemsSelectedState[pos] * ((widget.barHeight / 2) + widget.circleStrokeWidth)),
-        ),
-      );
-
-      // Text
-      double textHeight = fullHeight - widget.circleSize;
-      double opacity = _itemsSelectedState[pos];
-      if (opacity < 0.0) {
-        opacity = 0.0;
-      } else if (opacity > 1.0) {
-        opacity = 1.0;
-      }
-      children.add(Positioned(
-        child: Container(
-          width: r.width,
-          height: textHeight,
-          child: Center(
-              child: Opacity(
-                opacity: opacity,
-                child: Text(
-                  widget.tabItems[pos].title,
-                  textAlign: TextAlign.center,
-                  style: widget.tabItems[pos].labelStyle,
-                ),
-              )),
-        ),
-        left: r.left,
-        top: r.top +
-            (widget.circleSize / 2) -
-            (widget.circleStrokeWidth * 2) +
-            ((1.0 - _itemsSelectedState[pos]) * textHeight),
-      ));
-
-      if (pos != selectedPos) {
-        children.add(Positioned.fromRect(
-          child: GestureDetector(
-            onTap: () {
-              _controller.value = pos;
-            },
-          ),
-          rect: r,
-        ));
-      }
-    });
-
-    return Stack(
-      children: children,
-    );
+  void didChangeDependencies() {
+    _xController.value =
+        _indexToPosition(_selectedIndex) / MediaQuery.of(context).size.width;
+    _yController.value = 1.0;
+// traerCarito();
+    super.didChangeDependencies();
   }
 
-  void _setSelectedPos(int pos) {
-    previousSelectedPos = selectedPos;
-    selectedPos = pos;
-
-    itemsController.forward(from: 0.0);
-
-    selectedPosAnimation = makeSelectedPosAnimation(
-        previousSelectedPos.toDouble(), selectedPos.toDouble());
-    selectedPosAnimation.addListener(onSelectedPosAnimate);
-
-    if (widget.selectedCallback != null) {
-      widget.selectedCallback(selectedPos);
-    }
+  double _indexToPosition(int index) {
+    // Calculate button positions based off of their
+    // index (works with `MainAxisAlignment.spaceAround`)
+    const buttonCount = 5.0;
+    final appWidth = MediaQuery.of(context).size.width;
+    final buttonsWidth = _getButtonContainerWidth();
+    final startX = (appWidth - buttonsWidth) / 2;
+    return startX +
+        index.toDouble() * buttonsWidth / buttonCount +
+        buttonsWidth / (buttonCount * 2.0);
   }
 
   @override
   void dispose() {
+    _xController.dispose();
+    _yController.dispose();
     super.dispose();
-    itemsController.dispose();
-    _controller.removeListener(_newSelectedPosNotify);
   }
 
+  Widget _icon(IconData icon, bool isEnable, int index) {
+Widget widgetICON = Icon(icon,
+                  color: isEnable
+                      ? LightColor.background
+                      : Theme.of(context).iconTheme.color);
+if (index == 1){
+  widgetICON = GFIconBadge(
+                              child: Icon(icon,
+                  color: isEnable
+                      ? LightColor.background
+                      : Theme.of(context).iconTheme.color),
+                      counterChild: GFBadge(
+                        color: primarioOscuro,
+                        shape: GFBadgeShape.circle,
+                        // size: 23,
+          child: Text(cuantosProductosCarito.toString(),style: TextStyle(color: texto1),),
+        ),
+              );
 }
 
-class CircularBottomNavigationController extends ValueNotifier<int> {
-  CircularBottomNavigationController(int value) : super(value);
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.all(Radius.circular(50)),
+        onTap: () {
+          _handlePressed(index);
+        },
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 500),
+          alignment: isEnable ? Alignment.topCenter : Alignment.center,
+          child: AnimatedContainer(
+            height: isEnable ? 40 : 20,
+            duration: Duration(milliseconds: 300),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+                color: isEnable ? secundarioOscuro : secundarioClaro,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: isEnable ? Color(0xfffeece2) : secundarioClaro,
+                    blurRadius: 10,
+                    spreadRadius: 5,
+                    offset: Offset(5, 5),
+                  ),
+                ],
+                shape: BoxShape.circle),
+            child:Opacity(
+              opacity:isEnable ? _yController.value : 1,
+              child: widgetICON
+            )
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+  Widget _buildBackground() {
+    final inCurve = ElasticOutCurve(0.38);
+    return CustomPaint(
+      painter: BackgroundCurvePainter(
+          _xController.value * MediaQuery.of(context).size.width,
+          Tween<double>(
+            begin: Curves.easeInExpo.transform(_yController.value),
+            end: inCurve.transform(_yController.value),
+          ).transform(_yController.velocity.sign * 0.5 + 0.5),
+          tabBarFooterColor),
+    );
+  }
+
+  double _getButtonContainerWidth() {
+    double width = MediaQuery.of(context).size.width;
+    if (width > 400.0) {
+      width = 400.0;
+    }
+    return width;
+  }
+
+  void _handlePressed(int index) {
+    if (_selectedIndex == index || _xController.isAnimating) return;
+    widget.onIconPresedCallback(index);
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    _yController.value = 1.0;
+    _xController.animateTo(
+        _indexToPosition(index) / MediaQuery.of(context).size.width,
+        duration: Duration(milliseconds: 620));
+    Future.delayed(
+      Duration(milliseconds: 500),
+      () {
+        _yController.animateTo(1.0, duration: Duration(milliseconds: 1200));
+      },
+    );
+    _yController.animateTo(0.0, duration: Duration(milliseconds: 300));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final appSize = MediaQuery.of(context).size;
+    final height = 60.0;
+    return Container(
+      width: appSize.width,
+      height: 60,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            bottom: 0,
+            width: appSize.width,
+            height: height - 10,
+            child: _buildBackground(),
+          ),
+          Positioned(
+            left: (appSize.width - _getButtonContainerWidth()) / 2,
+            top: 0,
+            width: _getButtonContainerWidth(),
+            height: height,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                _icon(Icons.home, _selectedIndex == 0, 0),
+                // _icon(Icons.search, _selectedIndex == 1, 1),
+                _icon(Icons.shopping_cart, _selectedIndex == 1, 1),
+                 _icon(Icons.assignment, _selectedIndex == 2, 2),
+                _icon(Icons.account_circle, _selectedIndex == 3, 3),
+                _icon(Icons.business, _selectedIndex == 4, 4),
+                    // _icon(Icons.assignment, _selectedIndex == 3, 3),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
 }
